@@ -211,15 +211,21 @@ def scrape_live_today(page, emp_id):
 def full_historical_sync(emp_id, username, password):
     data = []
     with sync_playwright() as p:
+        launch_args = [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--no-zygote",
+            "--single-process",
+            "--disable-software-rasterizer",
+        ]
         try:
             browser = p.chromium.launch(
                 headless=True,
                 chromium_sandbox=False,
-                args=[
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-gpu",
-                ],
+                args=launch_args,
+                timeout=60000,
             )
         except Exception as e:
             msg = str(e)
@@ -233,11 +239,8 @@ def full_historical_sync(emp_id, username, password):
             browser = p.chromium.launch(
                 headless=True,
                 chromium_sandbox=False,
-                args=[
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-gpu",
-                ],
+                args=launch_args,
+                timeout=60000,
             )
         context = browser.new_context(
             http_credentials={"username": username, "password": password}
