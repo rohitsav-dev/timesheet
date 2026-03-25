@@ -209,7 +209,15 @@ def scrape_live_today(page, emp_id):
 def full_historical_sync(emp_id, username, password):
     data = []
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(
+            headless=True,
+            chromium_sandbox=False,
+            args=[
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+            ],
+        )
         context = browser.new_context(
             http_credentials={"username": username, "password": password}
         )
