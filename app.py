@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 import pandas as pd
 import streamlit as st
 from playwright.sync_api import sync_playwright
+import subprocess
+import sys
 
 # --- CONSTANTS ---
 WEEKLY_TARGET_HRS = 24
@@ -32,7 +34,7 @@ def parse_hours_to_mins(time_str):
         elif len(parts) == 2:  # HH:MM
             return int(parts[0]) * 60 + int(parts[1])
         return float(time_str) * 60
-    except:
+    except Exception:
         return 0
 
 
@@ -209,15 +211,34 @@ def scrape_live_today(page, emp_id):
 def full_historical_sync(emp_id, username, password):
     data = []
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            chromium_sandbox=False,
-            args=[
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
-            ],
-        )
+        try:
+            browser = p.chromium.launch(
+                headless=True,
+                chromium_sandbox=False,
+                args=[
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                ],
+            )
+        except Exception as e:
+            msg = str(e)
+            if "Executable doesn't exist" not in msg:
+                raise
+            # Fallback for hosts where postBuild didn't run.
+            subprocess.run(
+                [sys.executable, "-m", "playwright", "install", "chromium"],
+                check=True,
+            )
+            browser = p.chromium.launch(
+                headless=True,
+                chromium_sandbox=False,
+                args=[
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                ],
+            )
         context = browser.new_context(
             http_credentials={"username": username, "password": password}
         )
@@ -327,11 +348,11 @@ with st.sidebar:
     st.header("Login")
     with st.form(key="auth_form"):
         e_id = st.text_input("Emp ID", placeholder="Enter employee ID")
-        u_name = st.text_input("Username", placeholder="Enter cybage username")
+        u_name = st.text_input("Username", placeholder="Enter username")
         p_word = st.text_input(
             "Password", placeholder="Enter password", type="password"
         )
-        submitted = st.form_submit_button("Calculate Time")
+        submitted = st.form_submit_button("Calculate")
         if submitted:
             st.session_state.creds = {
                 "id": e_id,
